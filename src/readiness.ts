@@ -10,6 +10,7 @@ import {
 import { getMaxHeartRate, getLastFetchAt } from './db/meta.js';
 import { computeVerdict, type Verdict } from './verdict.js';
 import { fetchWeather, type CurrentWeather, type RideWindow } from './weather.js';
+import { computeTrainingLoad, type TrainingLoad } from './training.js';
 import { localDate } from './util/time.js';
 import { config } from './config/index.js';
 
@@ -55,7 +56,15 @@ export interface DashboardData {
     current: CurrentWeather;
     bestWindow: RideWindow | null;
   } | null;
-  sparkline: { day: string; recovery: number | null }[]; // oldest → newest
+  /** Full multi-metric history (oldest → newest), for the interactive chart. */
+  history: {
+    day: string;
+    recovery: number | null;
+    hrv: number | null;
+    rhr: number | null;
+    sleep: number | null;
+  }[];
+  trainingLoad: TrainingLoad;
   baselineSampleSize: number;
   lastFetch: string | null;
   hasData: boolean;
@@ -138,9 +147,15 @@ export async function buildDashboard(targetDay?: string): Promise<DashboardData>
     maxHeartRate: maxHr,
   });
 
-  const sparkline = getRecentDays(14)
+  const history = getRecentDays(90)
     .reverse()
-    .map((r) => ({ day: r.day, recovery: r.recovery_score }));
+    .map((r) => ({
+      day: r.day,
+      recovery: r.recovery_score,
+      hrv: r.hrv_rmssd_milli,
+      rhr: r.resting_heart_rate,
+      sleep: r.sleep_performance,
+    }));
 
   return {
     dateLabel: today ? labelForDay(today.day) : labelForDay(viewedDay),
@@ -161,7 +176,8 @@ export async function buildDashboard(targetDay?: string): Promise<DashboardData>
       pctOfNeed,
     },
     weather,
-    sparkline,
+    history,
+    trainingLoad: computeTrainingLoad(),
     baselineSampleSize: baselines.sampleSize,
     lastFetch: getLastFetchAt() != null ? new Date(getLastFetchAt()!).toISOString() : null,
     hasData: today !== null,

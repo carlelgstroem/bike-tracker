@@ -24,7 +24,7 @@ export const thresholds = {
     /** Wind speed (km/h) at or above this makes an hour "bad". */
     maxWindKmh: 30,
   },
-  /** Prescriptions per verdict level. HR ceilings are % of max HR. */
+  /** Prescriptions per verdict level. HR ceilings/zones are % of max HR. */
   prescriptions: {
     hard: {
       bike: 'Landsväg (road)',
@@ -32,15 +32,30 @@ export const thresholds = {
       targetStrain: [14, 16] as [number, number],
       hrCeilingPct: 90,
       durationMin: 90,
+      zone: 4, // primary training zone (Z4 threshold)
     },
     easy: {
-      bike: 'Grus (gravel)',
+      // Road-only rider: easy days are still the road bike, just relaxed.
+      // Change to 'Grus (gravel)' here if you add a gravel bike.
+      bike: 'Landsväg (road)',
       workout: 'Lugn zon 2',
       targetStrainMax: 10,
       hrCeilingPct: 70,
       durationMin: 75,
+      zone: 2, // aerobic base (Z2)
     },
   },
+  /**
+   * Five-zone HR model as [low%, high%] of max HR. Used to turn a % ceiling
+   * into an actual bpm target range on the ride card.
+   */
+  hrZones: {
+    1: [50, 60],
+    2: [60, 70],
+    3: [70, 80],
+    4: [80, 90],
+    5: [90, 100],
+  } as Record<number, [number, number]>,
 } as const;
 
 export type Thresholds = typeof thresholds;

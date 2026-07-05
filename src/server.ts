@@ -1,4 +1,7 @@
 import Fastify from 'fastify';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { config } from './config/index.js';
 import {
   buildAuthorizationUrl,
@@ -58,6 +61,29 @@ export function buildServer() {
   app.addHook('onRequest', requireAuth);
 
   app.get('/health', async () => ({ ok: true, authorised: hasTokens() }));
+
+  // ---- PWA assets (public/ lives next to src/ and dist/) ----
+  const publicDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
+  const asset = (file: string): Buffer | null => {
+    try {
+      return readFileSync(join(publicDir, file));
+    } catch {
+      return null;
+    }
+  };
+  const staticFiles: Record<string, { file: string; type: string }> = {
+    '/manifest.webmanifest': { file: 'manifest.webmanifest', type: 'application/manifest+json' },
+    '/icon-192.png': { file: 'icon-192.png', type: 'image/png' },
+    '/icon-512.png': { file: 'icon-512.png', type: 'image/png' },
+    '/icon-180.png': { file: 'icon-180.png', type: 'image/png' },
+  };
+  for (const [route, { file, type }] of Object.entries(staticFiles)) {
+    app.get(route, async (_req, reply) => {
+      const buf = asset(file);
+      if (!buf) return reply.code(404).send('Not found');
+      return reply.type(type).header('Cache-Control', 'public, max-age=86400').send(buf);
+    });
+  }
 
   // ---- Login / logout ----
   app.get<{ Querystring: { next?: string } }>('/login', async (req, reply) => {

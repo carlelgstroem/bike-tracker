@@ -29,6 +29,7 @@ ENV NODE_ENV=production \
 COPY package.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY public ./public
 # SQLite history lives here — attach a Railway Volume mounted at /app/data.
 # (No Docker VOLUME instruction: Railway's builder rejects it and manages the
 # mount itself.)

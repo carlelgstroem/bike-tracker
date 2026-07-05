@@ -31,6 +31,10 @@ export interface RidePrescription {
   /** e.g. "14–16" or "< 10". */
   targetStrain: string;
   indoor: boolean;
+  /** Primary training zone (1–5), or null on a rest day. */
+  zone: number | null;
+  /** Target zone as an absolute bpm range, if max HR is known. */
+  zoneBpm: [number, number] | null;
 }
 
 export interface Verdict {
@@ -47,6 +51,13 @@ function ceilingBpm(maxHr: number | null, pct: number): number | null {
   return maxHr === null ? null : Math.round((pct / 100) * maxHr);
 }
 
+/** Absolute [low, high] bpm for a zone, or null if max HR is unknown. */
+function zoneBpm(maxHr: number | null, zone: number): [number, number] | null {
+  const band = thresholds.hrZones[zone];
+  if (maxHr === null || !band) return null;
+  return [Math.round((band[0] / 100) * maxHr), Math.round((band[1] / 100) * maxHr)];
+}
+
 function hardRide(maxHr: number | null, indoor = false): RidePrescription {
   const p = thresholds.prescriptions.hard;
   return {
@@ -57,6 +68,8 @@ function hardRide(maxHr: number | null, indoor = false): RidePrescription {
     hrCeilingPct: p.hrCeilingPct,
     targetStrain: `${p.targetStrain[0]}–${p.targetStrain[1]}`,
     indoor,
+    zone: p.zone,
+    zoneBpm: zoneBpm(maxHr, p.zone),
   };
 }
 
@@ -70,10 +83,12 @@ function easyRide(maxHr: number | null, indoor = false): RidePrescription {
     hrCeilingPct: p.hrCeilingPct,
     targetStrain: `< ${p.targetStrainMax}`,
     indoor,
+    zone: p.zone,
+    zoneBpm: zoneBpm(maxHr, p.zone),
   };
 }
 
-function restCard(maxHr: number | null): RidePrescription {
+function restCard(_maxHr: number | null): RidePrescription {
   return {
     bike: '—',
     workout: 'Vila / lätt promenad',
@@ -82,6 +97,8 @@ function restCard(maxHr: number | null): RidePrescription {
     hrCeilingPct: 0,
     targetStrain: '0',
     indoor: false,
+    zone: null,
+    zoneBpm: null,
   };
 }
 

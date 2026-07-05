@@ -27,22 +27,26 @@ test('green recovery + good sleep + clear weather → hard road ride', () => {
   assert.equal(v.recommendation.hrCeilingPct, 90);
   assert.equal(v.recommendation.hrCeilingBpm, 171); // round(0.9 * 190)
   assert.equal(v.recommendation.targetStrain, '14–16');
+  assert.equal(v.recommendation.zone, 4);
+  assert.deepEqual(v.recommendation.zoneBpm, [152, 171]); // Z4 = 80–90% of 190
   assert.ok(v.alternative && !v.alternative.indoor, 'offers an easy alternative');
 });
 
-test('green recovery but poor sleep → downgraded to easy (yellow)', () => {
+test('green recovery but poor sleep → downgraded to easy road (yellow)', () => {
   const v = computeVerdict(base({ sleepPerformance: 70 }));
   assert.equal(v.level, 'yellow');
   assert.equal(v.title, 'Ja — lugnt');
-  assert.equal(v.recommendation.bike, 'Grus (gravel)');
+  assert.equal(v.recommendation.bike, 'Landsväg (road)');
   assert.equal(v.recommendation.hrCeilingPct, 70);
   assert.equal(v.recommendation.hrCeilingBpm, 133); // round(0.7 * 190)
+  assert.equal(v.recommendation.zone, 2);
+  assert.deepEqual(v.recommendation.zoneBpm, [114, 133]); // Z2 = 60–70% of 190
 });
 
-test('yellow recovery → easy gravel ride', () => {
+test('yellow recovery → easy road ride', () => {
   const v = computeVerdict(base({ recovery: 50 }));
   assert.equal(v.level, 'yellow');
-  assert.equal(v.recommendation.bike, 'Grus (gravel)');
+  assert.equal(v.recommendation.bike, 'Landsväg (road)');
   assert.equal(v.alternative, null);
 });
 

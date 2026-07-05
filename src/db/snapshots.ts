@@ -178,6 +178,26 @@ export function countDays(): number {
   return (db.prepare('SELECT COUNT(*) AS n FROM daily_snapshot').get() as { n: number }).n;
 }
 
+export interface WorkoutRow {
+  id: string;
+  start: string;
+  end: string;
+  sport_id: number | null;
+  strain: number | null;
+  average_heart_rate: number | null;
+  max_heart_rate: number | null;
+  kilojoule: number | null;
+}
+
+const selectRecentWorkouts = db.prepare<[number], WorkoutRow>(
+  'SELECT * FROM workouts ORDER BY start DESC LIMIT ?',
+);
+
+/** Most recent workouts, newest first. */
+export function getRecentWorkouts(limit: number): WorkoutRow[] {
+  return selectRecentWorkouts.all(limit);
+}
+
 export interface Baselines {
   /** Mean HRV over the window, or null if not enough data. */
   hrv: number | null;

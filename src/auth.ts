@@ -91,8 +91,10 @@ export function sanitizeNext(next: unknown): string {
  */
 export async function requireAuth(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   if (!authEnabled) return;
-  const path = req.url.split('?')[0];
+  const path = req.url.split('?')[0] ?? '';
   if (path === '/health' || path === '/login' || path === '/logout') return;
+  // PWA assets are non-sensitive and may be fetched by the OS without a cookie.
+  if (path === '/manifest.webmanifest' || path.startsWith('/icon-')) return;
   if (isAuthed(req)) return;
 
   const wantsHtml = (req.headers.accept ?? '').includes('text/html');
