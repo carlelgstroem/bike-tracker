@@ -142,6 +142,12 @@ export function buildServer() {
         req.log.warn(err, 'post-auth summary fetch failed (tokens are saved)');
       }
 
+      // First-time connect: import recent history so the day-toggle and
+      // sparkline have data immediately. Runs in the background (idempotent).
+      backfillHistory(30)
+        .then((n) => req.log.info(`post-auth backfill imported ${n} day(s)`))
+        .catch((err) => req.log.warn(err, 'post-auth backfill failed'));
+
       return reply
         .type('text/html')
         .send(
