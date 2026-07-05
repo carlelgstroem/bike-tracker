@@ -8,9 +8,16 @@ import {
 import { hasTokens } from './whoop/tokens.js';
 import { refreshData, ensureFresh } from './service.js';
 import { buildDashboard } from './readiness.js';
-import { renderDashboard } from './render.js';
+import { renderDashboard, renderLogin } from './render.js';
 import { backfillHistory } from './backfill.js';
-import { basicAuthHook } from './auth.js';
+import {
+  requireAuth,
+  isAuthed,
+  verifyPassword,
+  setSession,
+  clearSession,
+  sanitizeNext,
+} from './auth.js';
 
 /**
  * Short-lived store of outstanding OAuth `state` values for CSRF protection.
@@ -34,10 +41,46 @@ export function buildServer() {
   // trustProxy so req.protocol reflects x-forwarded-proto behind Railway's TLS edge.
   const app = Fastify({ logger: true, trustProxy: true });
 
+  // Parse login form posts (application/x-www-form-urlencoded) without a plugin.
+  app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      try {
+        done(null, Object.fromEntries(new URLSearchParams(body as string)));
+      } catch (err) {
+        done(err as Error);
+      }
+    },
+  );
+
   // Auth gate (no-op unless AUTH_PASSWORD is set). Runs before every route.
-  app.addHook('onRequest', basicAuthHook);
+  app.addHook('onRequest', requireAuth);
 
   app.get('/health', async () => ({ ok: true, authorised: hasTokens() }));
+
+  // ---- Login / logout ----
+  app.get<{ Querystring: { next?: string } }>('/login', async (req, reply) => {
+    if (isAuthed(req)) return reply.redirect(sanitizeNext(req.query.next));
+    return reply.type('text/html; charset=utf-8').send(renderLogin({ next: sanitizeNext(req.query.next) }));
+  });
+
+  app.post<{ Body: { password?: string; next?: string } }>('/login', async (req, reply) => {
+    const next = sanitizeNext(req.body?.next);
+    if (verifyPassword(req.body?.password ?? '')) {
+      setSession(req, reply);
+      return reply.redirect(next);
+    }
+    return reply
+      .code(401)
+      .type('text/html; charset=utf-8')
+      .send(renderLogin({ next, error: true }));
+  });
+
+  app.get('/logout', async (req, reply) => {
+    clearSession(req, reply);
+    return reply.redirect('/login');
+  });
 
   // Dashboard. Refresh in the background if data is stale (>30 min); never block
   // the page render on a slow WHOOP call. `?day=YYYY-MM-DD` views a past day.

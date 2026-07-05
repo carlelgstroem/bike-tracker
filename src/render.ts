@@ -109,6 +109,54 @@ function ridgeline(points: { day: string; recovery: number | null }[]): string {
     </svg>`;
 }
 
+/** Standalone login page (same visual language as the dashboard). */
+export function renderLogin(opts: { next: string; error?: boolean }): string {
+  const err = opts.error
+    ? `<p class="login__err">Fel lösenord. Försök igen.</p>`
+    : '';
+  return `<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e1420" />
+<title>Munin — logga in</title>
+<style>
+:root{ --bg:#0e1420; --panel:#161d2b; --ink:#eef1f6; --muted:#8a97ac; --line:#232c3d; --dawn:#5b7fa6; --red:#c2483d; }
+@media (prefers-color-scheme: light){ :root{ --bg:#eef1f4; --panel:#fff; --ink:#121722; --muted:#5c6579; --line:#dde2ea; } }
+*{ box-sizing:border-box; }
+html,body{ margin:0; height:100%; }
+body{ background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; display:grid; place-items:center; padding:24px; }
+.card{ width:100%; max-width:340px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:26px 22px; }
+.brand{ display:flex; align-items:center; gap:9px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; font-size:.82rem; margin-bottom:4px; }
+.brand svg{ width:20px; height:20px; fill:var(--dawn); }
+.sub{ margin:0 0 20px; color:var(--muted); font-size:.82rem; }
+label{ display:block; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700; margin:0 0 7px; }
+input[type=password]{ width:100%; padding:12px 13px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:1rem; }
+input:focus{ outline:2px solid var(--dawn); outline-offset:1px; }
+button{ width:100%; margin-top:14px; padding:12px; border:0; border-radius:11px; background:var(--dawn); color:#fff; font-weight:800; font-size:1rem; cursor:pointer; }
+.login__err{ margin:12px 0 0; color:var(--red); font-size:.82rem; font-weight:600; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13c3-1 5-3 8-3 1-2 3-3 6-3 2 0 3 1 4 2-1 0-2 0-3 1 1 0 2 1 2 2-2 0-3 0-5 1-2 2-5 3-8 3-3 0-5-2-6-4 1 0 1 1 2 1 0-1 0-2-1-3 2 0 3 1 5 2-1-1-3-2-5-2z"/></svg>
+    Munin
+  </div>
+  <p class="sub">Ska jag cykla idag?</p>
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="${esc(opts.next)}" />
+    <label for="pw">Lösenord</label>
+    <input id="pw" name="password" type="password" autocomplete="current-password" autofocus required />
+    <button type="submit">Logga in</button>
+    ${err}
+  </form>
+</main>
+</body>
+</html>`;
+}
+
 export function renderDashboard(d: DashboardData): string {
   const v = d.verdict;
   const level = v.level; // green | yellow | red
