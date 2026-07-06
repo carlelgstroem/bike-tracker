@@ -1,0 +1,16 @@
+services:
+  # ngrok tunnel exposing the munin service at a public https URL.
+  # Run alongside the base compose:
+  #   docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d
+  # Requires NGROK_AUTHTOKEN in .env.
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: munin-ngrok
+    restart: unless-stopped
+    command: http munin:3000
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    ports:
+      - "127.0.0.1:4040:4040" # local inspector API (used by repoint.sh)
+    depends_on:
+      - munin
