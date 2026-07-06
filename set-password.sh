@@ -23,5 +23,8 @@ esac
 grep -v '^AUTH_PASSWORD=' .env > .env.tmp && mv .env.tmp .env
 printf "AUTH_PASSWORD='%s'\n" "$NEW" >> .env
 chmod 600 .env
+# Keep .env owned by syscall so `docker compose` (run as syscall) can read it,
+# even when this script is run from a root shell. No-op when already owned.
+chown syscall:syscall .env 2>/dev/null || true
 docker compose -f docker-compose.yml -f docker-compose.ngrok.yml up -d >/dev/null 2>&1
 echo "Password updated. All existing logins were signed out."
