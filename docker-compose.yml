@@ -1,0 +1,12 @@
+services:
+  munin:
+    build: .
+    image: munin:latest
+    container_name: munin
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      # SQLite history + WHOOP tokens persist on the host, survive rebuilds.
+      - ./data:/app/data
